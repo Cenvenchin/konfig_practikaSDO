@@ -10,8 +10,11 @@ const_declare: NAME ":" value   -> declare
 value: NUMBER                    -> number
      | STRING                    -> string
      | array
+     | const_ref                 -> ref
 
 array: "'" "(" [value (value)*] ")" -> array
+
+const_ref: "@{" NAME "}"
 
 COMMENT: /\(\*[\s\S]*?\*\)/
 
@@ -41,6 +44,13 @@ class ConfigTransformer(Transformer):
 
     def array(self, *values):
         return list(values)
+
+    def ref(self, token):
+        name = str(token[2:-1])  # убираем @{ и }
+        if name in self.constants:
+            return self.constants[name]
+        else:
+            raise ValueError(f"Константа '{name}' не найдена")
 
 def parse_config(text):
     parser = Lark(grammar, parser='lalr', transformer=ConfigTransformer())
